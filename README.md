@@ -15,8 +15,14 @@ If you are `Gopher`, you can use the golang implementation to connect our socket
 
 ## Golang Implementation
 
+Check code [here](https://github.com/longbridgeapp/openapi-protocol/tree/main/go).
+
 code structure:
 
-- client - client sample code
-- v1 - protocol implement
-- 
+- go - protocol definations
+- go/client - client sample code
+- go/v1 - protocol version 1 implement
+- go/v2 - protocol version 2 implement, not support yet
+
+Example is [here](https://github.com/longbridgeapp/openapi-protocol/tree/main/examples/go)
+
