@@ -1,0 +1,151 @@
+package v1
+
+import (
+	"encoding/binary"
+
+	"github.com/longbridgeapp/openapi-protocol/go"
+
+	"github.com/Allenxuxu/ringbuffer"
+)
+
+func init() {
+	qop.Register(1, &protocolV1{})
+}
+
+const (
+	NonceLength     = 8
+	SignatureLength = 16
+)
+
+var _ qop.Protocol = &protocolV1{}
+
+type protocolV1 struct {
+}
+
+func (p *protocolV1) Version() uint8 {
+	return 1
+}
+
+func (p *protocolV1) Unpack(ctx *qop.Context, buf *ringbuffer.RingBuffer) (packet *qop.Packet, done bool, err error) {
+	ctx.BeginUnpack()
+
+	header := headerFromContext(ctx)
+
+	defer func() {
+		// if done or err raised, release header
+		if done || err != nil {
+			ctx.SetHeader(nil)
+			defaultHeaderPool.Put(header)
+		}
+	}()
+
+	if !header.unpacked {
+		ok, e := header.Unpack(ctx, buf)
+
+		if e != nil {
+			err = e
+			return
+		}
+
+		// waiting header data
+		if !ok {
+			return
+		}
+	}
+
+	len := int(header.BodyLength)
+
+	if header.Verify == 1 {
+		len = len + NonceLength + SignatureLength
+	}
+
+	// wait all byte ready
+	if buf.Length() < len {
+		return
+	}
+
+	body := make([]byte, header.BodyLength)
+	buf.Read(body)
+
+	packet = &qop.Packet{
+		Metadata: header.Metadata(ctx),
+		Body:     body,
+	}
+
+	if header.Verify == 1 {
+		packet.Metadata.Nonce = buf.PeekUint64()
+		buf.Retrieve(NonceLength)
+
+		s := make([]byte, SignatureLength)
+		buf.Read(s)
+		packet.Metadata.Signature = s
+	}
+
+	if header.Gzip == 1 {
+		// TODO: uncompress body
+	}
+
+	// unpack is done
+	done = true
+
+	ctx.EndUnpack()
+	return
+
+}
+
+func (p *protocolV1) Pack(ctx *qop.Context, packet *qop.Packet, opts ...qop.PackOption) ([]byte, error) {
+	o := qop.NewPackOptions(opts...)
+
+	bl := len(packet.Body)
+
+	if o.MinGzipSize != 0 && bl >= o.MinGzipSize {
+		// TODO: compress body
+	}
+
+	if bl > MaxBodyLength {
+		return nil, ErrBodyLenHitLimit
+	}
+
+	h := headerFromMetadata(packet.Metadata)
+	defer func() {
+		defaultHeaderPool.Put(h)
+	}()
+
+	h.BodyLength = uint32(bl)
+
+	// TODO: optmize using []byte pool
+	hd, err := h.Pack()
+
+	if err != nil {
+		return nil, err
+	}
+
+	var hl int
+
+	switch PacketType(h.Type) {
+	case RequestPacket:
+		hl = RequestHeaderLen
+	case ResponsePacket:
+		hl = ResponseHeaderLen
+	case PushPacket:
+		hl = PushHeaderLen
+	}
+
+	l := hl + bl
+
+	if packet.Metadata.Verify {
+		l = l + NonceLength + SignatureLength
+	}
+
+	data := make([]byte, l)
+
+	copy(data, hd)
+	copy(data[len(hd):], packet.Body)
+
+	if packet.Metadata.Verify {
+		binary.BigEndian.PutUint64(data[hl+bl:hl+bl+NonceLength], packet.Metadata.Nonce)
+		copy(data[hl+bl+NonceLength:], packet.Metadata.Signature)
+	}
+
+	return data, nil
+}
