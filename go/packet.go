@@ -223,7 +223,7 @@ func newPacket(ctx *Context, t PacketType, cmd uint32, body interface{}, opts ..
 	}, nil
 }
 
-func marshal(c CodecType, v any) (data []byte, err error) {
+func marshal(c CodecType, v interface{}) (data []byte, err error) {
 	switch c {
 	case CodecProtobuf:
 		m, ok := v.(proto.Message)
