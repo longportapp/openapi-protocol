@@ -1,6 +1,6 @@
 module github.com/longbridgeapp/openapi-protocol/go
 
-go 1.18
+go 1.17
 
 require (
 	github.com/Allenxuxu/ringbuffer v0.0.11

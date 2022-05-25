@@ -21,10 +21,10 @@ type Logger interface {
 	Error(msg string)
 	Warn(msg string)
 	Debug(msg string)
-	Infof(msg string, args ...any)
-	Errorf(msg string, args ...any)
-	Warnf(msg string, args ...any)
-	Debugf(msg string, args ...any)
+	Infof(msg string, args ...interface{})
+	Errorf(msg string, args ...interface{})
+	Warnf(msg string, args ...interface{})
+	Debugf(msg string, args ...interface{})
 }
 
 type DefaultLogger struct {
@@ -53,7 +53,7 @@ func (l *DefaultLogger) Info(msg string) {
 
 }
 
-func (l *DefaultLogger) Infof(msg string, args ...any) {
+func (l *DefaultLogger) Infof(msg string, args ...interface{}) {
 	if l.lvl <= LevelInfo {
 		log.Printf("[INFO] "+msg, args...)
 	}
@@ -66,7 +66,7 @@ func (l *DefaultLogger) Error(msg string) {
 	}
 }
 
-func (l *DefaultLogger) Errorf(msg string, args ...any) {
+func (l *DefaultLogger) Errorf(msg string, args ...interface{}) {
 	if l.lvl <= LevelError {
 		log.Printf("[ERR] "+msg, args...)
 	}
@@ -78,7 +78,7 @@ func (l *DefaultLogger) Debug(msg string) {
 	}
 }
 
-func (l *DefaultLogger) Debugf(msg string, args ...any) {
+func (l *DefaultLogger) Debugf(msg string, args ...interface{}) {
 	if l.lvl <= LevelDebug {
 		log.Printf("[DEBUG] "+msg, args...)
 	}
@@ -90,7 +90,7 @@ func (l *DefaultLogger) Warn(msg string) {
 	}
 }
 
-func (l *DefaultLogger) Warnf(msg string, args ...any) {
+func (l *DefaultLogger) Warnf(msg string, args ...interface{}) {
 	if l.lvl <= LevelWarn {
 		log.Printf("[WARN] "+msg, args...)
 	}
