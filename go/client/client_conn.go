@@ -33,4 +33,5 @@ type ClientConn interface {
 	OnPacket(func(*protocol.Packet, error))
 	Write(*protocol.Packet, ...protocol.PackOption) error
 	Context() *protocol.Context
+	NeedHandleControl() bool
 }

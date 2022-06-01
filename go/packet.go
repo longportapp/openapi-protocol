@@ -144,11 +144,11 @@ func WithStatusCode(code uint8) PacketOption {
 }
 
 func NewPush(ctx *Context, cmd uint32, body interface{}, opts ...PacketOption) (Packet, error) {
-	return newPacket(ctx, PushPacket, cmd, body, opts...)
+	return NewPacket(ctx, PushPacket, cmd, body, opts...)
 }
 
 func MustNewPush(ctx *Context, cmd uint32, body interface{}, opts ...PacketOption) Packet {
-	p, e := newPacket(ctx, PushPacket, cmd, body, opts...)
+	p, e := NewPacket(ctx, PushPacket, cmd, body, opts...)
 
 	if e != nil {
 		panic(e)
@@ -160,7 +160,7 @@ func MustNewPush(ctx *Context, cmd uint32, body interface{}, opts ...PacketOptio
 func MustNewRequest(ctx *Context, cmd uint32, body interface{}, opts ...PacketOption) Packet {
 	opts = append(opts, WithRequestId(ctx.NextReqId()))
 
-	p, e := newPacket(ctx, RequestPacket, cmd, body, opts...)
+	p, e := NewPacket(ctx, RequestPacket, cmd, body, opts...)
 
 	if e != nil {
 		panic(e)
@@ -172,25 +172,24 @@ func MustNewRequest(ctx *Context, cmd uint32, body interface{}, opts ...PacketOp
 func NewRequest(ctx *Context, cmd uint32, body interface{}, opts ...PacketOption) (Packet, error) {
 	opts = append(opts, WithRequestId(ctx.NextReqId()))
 
-	return newPacket(ctx, RequestPacket, cmd, body, opts...)
+	return NewPacket(ctx, RequestPacket, cmd, body, opts...)
 }
 
-func MustNewResponse(ctx *Context, cmd uint32, sc uint8, body interface{}, opts ...PacketOption) Packet {
-	opts = append(opts, WithStatusCode(sc))
-	p, e := newPacket(ctx, ResponsePacket, cmd, body, opts...)
+func MustNewResponse(ctx *Context, cmd uint32, code uint8, body interface{}, opts ...PacketOption) Packet {
+	opts = append(opts, WithStatusCode(code))
+	p, e := NewPacket(ctx, ResponsePacket, cmd, body, opts...)
 	if e != nil {
 		panic(e)
 	}
-
 	return p
 }
 
 func NewResponse(ctx *Context, cmd uint32, sc uint8, body interface{}, opts ...PacketOption) (Packet, error) {
 	opts = append(opts, WithStatusCode(sc))
-	return newPacket(ctx, ResponsePacket, cmd, body, opts...)
+	return NewPacket(ctx, ResponsePacket, cmd, body, opts...)
 }
 
-func newPacket(ctx *Context, t PacketType, cmd uint32, body interface{}, opts ...PacketOption) (Packet, error) {
+func NewPacket(ctx *Context, t PacketType, cmd uint32, body interface{}, opts ...PacketOption) (Packet, error) {
 	md := &Metadata{
 		Type:    t,
 		Codec:   ctx.Codec,

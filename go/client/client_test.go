@@ -47,6 +47,10 @@ type mockConn struct {
 	closed bool
 }
 
+func (c *mockConn) NeedHandleControl() bool {
+	return true
+}
+
 func (c *mockConn) Close(err error) {
 	c.closed = true
 	close(c.packetCh)

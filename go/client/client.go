@@ -130,6 +130,10 @@ func (c *Client) Dial(ctx context.Context, u string, handshake *protocol.Handsha
 	return nil
 }
 
+func (c *Client) AuthInfo() *control.AuthResponse {
+	return c.authInfo
+}
+
 func (c *Client) dial(ctx context.Context, dialer DialConnFunc) (err error) {
 	if c.conn, err = dialer(ctx, c, c.addr, c.handshake, c.dialOptions); err == nil {
 		c.conn.OnPacket(c.onPacket)
@@ -384,7 +388,11 @@ func (c *Client) keepalive() {
 	}
 
 	ping := func() error {
-		p, err := protocol.NewRequest(c.conn.Context(), uint32(control.Command_CMD_HEARTBEAT), &control.Heartbeat{Timestamp: time.Now().UnixNano() / int64(time.Millisecond)})
+		id := c.conn.Context().NextReqId()
+		hid := new(int32)
+		*hid = int32(id)
+
+		p, err := protocol.NewPacket(c.conn.Context(), protocol.RequestPacket, uint32(control.Command_CMD_HEARTBEAT), &control.Heartbeat{Timestamp: time.Now().UnixNano() / int64(time.Millisecond), HeartbeatId: hid}, protocol.WithRequestId(id))
 
 		if err != nil {
 			return err
@@ -394,7 +402,7 @@ func (c *Client) keepalive() {
 			return err
 		}
 
-		c.lastKeepaliveId = p.Metadata.RequestId
+		c.lastKeepaliveId = id
 
 		return nil
 	}
@@ -426,7 +434,7 @@ func (c *Client) onPacket(packet *protocol.Packet, err error) {
 		return
 	}
 
-	c.Logger.Debugf("got packet, cmd: %d, req_id: %d, status_code: %d", packet.CMD(), packet.Metadata.RequestId, packet.Metadata.StatusCode)
+	c.Logger.Debugf("got packet, type: %s, cmd: %d, req_id: %d, status_code: %d", packet.Metadata.Type, packet.CMD(), packet.Metadata.RequestId, packet.Metadata.StatusCode)
 
 	if packet.IsControl() {
 		c.handleControl(packet)
@@ -497,6 +505,10 @@ func (c *Client) handleResponse(packet *protocol.Packet) {
 func (c *Client) handlePing(packet *protocol.Packet) {
 	if c.onPing != nil {
 		c.onPing(packet)
+	}
+
+	if !c.conn.NeedHandleControl() {
+		return
 	}
 
 	res, _ := protocol.NewResponse(c.conn.Context(), uint32(control.Command_CMD_HEARTBEAT), protocol.StatusSuccess, packet.Body, protocol.WithRequestId(packet.Metadata.RequestId))
