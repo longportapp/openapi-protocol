@@ -97,6 +97,10 @@ type tcpConn struct {
 	dopts DialOptions
 }
 
+func (conn *tcpConn) NeedHandleControl() bool {
+	return true
+}
+
 func (conn *tcpConn) Context() *protocol.Context {
 	return conn.qctx
 }
@@ -106,13 +110,7 @@ func (conn *tcpConn) Write(p *protocol.Packet, popts ...protocol.PackOption) err
 		return errConnClosed
 	}
 
-	proto, err := protocol.GetProtocol(conn.qctx.Version)
-
-	if err != nil {
-		return err
-	}
-
-	data, err := proto.Pack(conn.qctx, p, popts...)
+	data, err := conn.p.Pack(conn.qctx, p, popts...)
 
 	if err != nil {
 		return err
