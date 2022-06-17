@@ -69,6 +69,8 @@ type Client struct {
 	// handle client close event
 	onClose func(err error)
 
+	afterReconnected func()
+
 	authInfo  *control.AuthResponse
 	handshake *protocol.Handshake
 
@@ -191,6 +193,7 @@ func (c *Client) reconnecting() {
 
 			if err == nil {
 				c.Logger.Info("reconnect success")
+				c.afterReconnected()
 				return
 			}
 
@@ -338,6 +341,11 @@ func (c *Client) OnPong(fn func(*protocol.Packet)) {
 // OnClose using to handle client close
 func (c *Client) OnClose(fn func(err error)) {
 	c.onClose = fn
+}
+
+// AfterReconnected using to handle client after reconnected
+func (c *Client) AfterReconnected(fn func()) {
+	c.afterReconnected = fn
 }
 
 // Close used to close conn between server
