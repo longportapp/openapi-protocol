@@ -184,7 +184,7 @@ func (conn *wsConn) Close(err error) {
 		return
 	}
 
-	conn.logger.Errorf("close conn, err: %v", err)
+	conn.logger.Infof("close conn, err: %v", err)
 	close(conn.closeCh)
 	close(conn.writeCh)
 
