@@ -121,15 +121,7 @@ func (c *Client) Dial(ctx context.Context, u string, handshake *protocol.Handsha
 		go c.keepalive()
 	}
 
-	if c.dialOptions.AuthToken != "" {
-		if err = c.auth(); err != nil {
-			return err
-		}
-	}
-
-	c.dialOptions.AuthToken = ""
-
-	return nil
+	return c.auth()
 }
 
 func (c *Client) AuthInfo() *control.AuthResponse {
@@ -145,9 +137,16 @@ func (c *Client) dial(ctx context.Context, dialer DialConnFunc) (err error) {
 }
 
 func (c *Client) auth() error {
+	if c.dialOptions.AuthTokenGetter == nil {
+		return nil
+	}
+	token, err := c.dialOptions.AuthTokenGetter()
+	if err != nil {
+		return err
+	}
 	res, err := c.Do(context.Background(), &Request{
 		Cmd:  uint32(control.Command_CMD_AUTH),
-		Body: &control.AuthRequest{Token: c.dialOptions.AuthToken},
+		Body: &control.AuthRequest{Token: token},
 	}, RequestTimeout(c.dialOptions.AuthTimeout))
 
 	if err != nil {
@@ -194,12 +193,6 @@ func (c *Client) reconnecting() {
 			if err == nil {
 				c.Logger.Info("reconnect success")
 				c.afterReconnected()
-				return
-			}
-
-			if err == ErrSessExpired {
-				c.Logger.Error("close client for session expired")
-				c.Close(err)
 				return
 			}
 
@@ -256,15 +249,27 @@ func (c *Client) reconnect() error {
 
 	// do auth
 	if c.isAuthExpired() {
-		return ErrSessExpired
+		return c.auth()
 	}
 
+	return c.reconnectDial()
+}
+
+func (c *Client) reconnectDial() error {
 	res, err := c.Do(c.Context, &Request{Cmd: uint32(control.Command_CMD_RECONNECT), Body: &control.ReconnectRequest{
 		SessionId: c.authInfo.SessionId,
 	}}, RequestTimeout(c.dialOptions.AuthTimeout))
 
 	if err != nil {
 		return errors.Wrap(err, "reconnect request")
+	}
+
+	if res.StatusCode() == protocol.StatusUnauthenticated {
+		return c.auth()
+	}
+
+	if e := res.Err(); e != nil {
+		return fmt.Errorf("code: %d message: %s", e.Code, e.Msg)
 	}
 
 	var info control.AuthResponse
@@ -274,7 +279,6 @@ func (c *Client) reconnect() error {
 	}
 
 	c.authInfo = &info
-
 	return nil
 }
 

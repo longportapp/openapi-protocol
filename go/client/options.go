@@ -44,7 +44,7 @@ type DialOption func(*DialOptions)
 
 // DialOptions are config for dial
 type DialOptions struct {
-	AuthToken        string
+	AuthTokenGetter  func() (string, error)
 	AuthTimeout      time.Duration
 	Timeout          time.Duration
 	Keepalive        time.Duration
@@ -129,14 +129,6 @@ func MinGzipSize(i int) DialOption {
 	}
 }
 
-// WithAuthToken set auth token. if token have value,
-// client will do auth after dial
-func WithAuthToken(token string) DialOption {
-	return func(o *DialOptions) {
-		o.AuthToken = token
-	}
-}
-
 // MaxReconnect set max reconnect count
 // Default is unlimited time until session expired
 func MaxReconnect(i int) DialOption {
@@ -144,6 +136,13 @@ func MaxReconnect(i int) DialOption {
 		if i > 0 {
 			o.MaxReconnect = i
 		}
+	}
+}
+
+// WithAuthTokenGetter set AuthToken getter
+func WithAuthTokenGetter(f func() (string, error)) DialOption {
+	return func(o *DialOptions) {
+		o.AuthTokenGetter = f
 	}
 }
 

@@ -31,13 +31,15 @@ func main() {
 	cli := client.New()
 
 	cli.Logger.SetLevel(lvl)
-
+	tokenGetter := func() (string, error) {
+		return token, nil
+	}
 	// dial and auth
 	if err := cli.Dial(context.Background(), addr, &protocol.Handshake{
 		Version:  1,
 		Codec:    protocol.CodecProtobuf,
 		Platform: protocol.PlatformOpenapi,
-	}, client.WithAuthToken(token)); err != nil {
+	}, client.WithAuthTokenGetter(tokenGetter)); err != nil {
 		log.Fatalf("failed dial to server: %s, err: %v", addr, err)
 	}
 
