@@ -264,6 +264,10 @@ func (c *Client) reconnectDial() error {
 		return errors.Wrap(err, "reconnect request")
 	}
 
+	if res.CMD() == uint32(protocol.StatusUnauthenticated) {
+		return c.auth()
+	}
+
 	var info control.AuthResponse
 
 	if err = res.Unmarshal(&info); err != nil {
