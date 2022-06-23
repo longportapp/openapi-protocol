@@ -264,7 +264,7 @@ func (c *Client) reconnectDial() error {
 		return errors.Wrap(err, "reconnect request")
 	}
 
-	if res.CMD() == uint32(protocol.StatusUnauthenticated) {
+	if res.StatusCode() == protocol.StatusUnauthenticated {
 		return c.auth()
 	}
 
