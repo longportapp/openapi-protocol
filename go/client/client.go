@@ -192,7 +192,9 @@ func (c *Client) reconnecting() {
 
 			if err == nil {
 				c.Logger.Info("reconnect success")
-				c.afterReconnected()
+				if c.afterReconnected != nil {
+					c.afterReconnected()
+				}
 				return
 			}
 
