@@ -268,6 +268,10 @@ func (c *Client) reconnectDial() error {
 		return c.auth()
 	}
 
+	if e := res.Err(); e != nil {
+		return fmt.Errorf("code: %d message: %s", e.Code, e.Msg)
+	}
+
 	var info control.AuthResponse
 
 	if err = res.Unmarshal(&info); err != nil {
