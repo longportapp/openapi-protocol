@@ -313,7 +313,14 @@ func (c *Client) Do(ctx context.Context, req *Request, opts ...RequestOption) (r
 	}
 
 	res, err = c.recv(rc, rp.Metadata.RequestId)
+	if err != nil {
+		return
+	}
 
+	err = res.Err()
+	if err != nil {
+		return
+	}
 	return
 }
 

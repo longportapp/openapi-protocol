@@ -82,7 +82,7 @@ func (p Packet) CMD() uint32 {
 	return p.Metadata.CmdCode
 }
 
-func (p Packet) Err() *control.Error {
+func (p Packet) Err() error {
 	if p.Metadata.Type != ResponsePacket {
 		return nil
 	}
@@ -100,7 +100,7 @@ func (p Packet) Err() *control.Error {
 		}
 	}
 
-	return &e
+	return NewError(p.Metadata.StatusCode, e.GetCode(), e.GetMsg())
 }
 
 func (p Packet) Unmarshal(v interface{}) error {
