@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"net/url"
 
 	"sync"
@@ -153,10 +152,6 @@ func (c *Client) auth() error {
 		return errors.Wrap(err, "do auth")
 	}
 
-	if e := res.Err(); e != nil {
-		return fmt.Errorf("code: %d message: %s", e.Code, e.Msg)
-	}
-
 	var info control.AuthResponse
 
 	if err = res.Unmarshal(&info); err != nil {
@@ -268,10 +263,6 @@ func (c *Client) reconnectDial() error {
 
 	if res.StatusCode() == protocol.StatusUnauthenticated {
 		return c.auth()
-	}
-
-	if e := res.Err(); e != nil {
-		return fmt.Errorf("code: %d message: %s", e.Code, e.Msg)
 	}
 
 	var info control.AuthResponse
