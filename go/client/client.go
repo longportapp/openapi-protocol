@@ -21,6 +21,7 @@ var (
 	errConnClosed = errors.New("client conn closed")
 )
 
+// client is an socket client interface
 type Client interface {
 	// Dial using to dial with server
 	Dial(ctx context.Context, u string, handshake *protocol.Handshake, opts ...DialOption) error
