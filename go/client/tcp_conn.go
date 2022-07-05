@@ -27,7 +27,7 @@ func parseHostAndPort(p string) (host, port string) {
 	return parts[0], parts[1]
 }
 
-func dialTCPConn(ctx context.Context, cli *Client, uri *url.URL, handshake *protocol.Handshake, o *DialOptions) (ClientConn, error) {
+func dialTCPConn(ctx context.Context, logger protocol.Logger, uri *url.URL, handshake *protocol.Handshake, o *DialOptions) (ClientConn, error) {
 
 	ver := handshake.Version
 	p, err := protocol.GetProtocol(ver)
@@ -49,7 +49,7 @@ func dialTCPConn(ctx context.Context, cli *Client, uri *url.URL, handshake *prot
 	qctx.Version = handshake.Version
 
 	c := &tcpConn{
-		logger:  cli.Logger,
+		logger:  logger,
 		qctx:    qctx,
 		p:       p,
 		conn:    conn,

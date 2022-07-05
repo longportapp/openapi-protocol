@@ -25,7 +25,7 @@ func GetDialer(scheme string) (DialConnFunc, bool) {
 	return f, ok
 }
 
-type DialConnFunc func(ctx context.Context, cli *Client, uri *url.URL, handshake *protocol.Handshake, opts *DialOptions) (ClientConn, error)
+type DialConnFunc func(ctx context.Context, logger protocol.Logger, uri *url.URL, handshake *protocol.Handshake, opts *DialOptions) (ClientConn, error)
 
 // ClientConn is socket conn abstract
 type ClientConn interface {

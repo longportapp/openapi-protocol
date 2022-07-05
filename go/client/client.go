@@ -21,6 +21,27 @@ var (
 	errConnClosed = errors.New("client conn closed")
 )
 
+type Client interface {
+	// Dial using to dial with server
+	Dial(ctx context.Context, u string, handshake *protocol.Handshake, opts ...DialOption) error
+	// AuthInfo return authorization information
+	AuthInfo() *control.AuthResponse
+	// Do will do request to server
+	Do(ctx context.Context, req *Request, opts ...RequestOption) (*protocol.Packet, error)
+	// Subscribe using to register handle of push data
+	Subscribe(cmd uint32, sub func(*protocol.Packet))
+	// AfterReconnected using to handle client after reconnected
+	AfterReconnected(fn func())
+	// OnPing using to custom handle ping packet
+	OnPing(fn func(*protocol.Packet))
+	// OnPong using to custom handle pong packet
+	OnPong(fn func(*protocol.Packet))
+	// OnClose using to handle client close
+	OnClose(fn func(err error))
+	// Close used to close conn between server
+	Close(err error) error
+}
+
 // Request represents an socket request to server
 type Request struct {
 	Cmd  uint32
@@ -28,8 +49,8 @@ type Request struct {
 }
 
 // New returns a new client instance
-func New(opts ...ClientOption) *Client {
-	c := &Client{
+func New(opts ...ClientOption) Client {
+	c := &client{
 		closeCh: make(chan struct{}),
 		subs:    make(map[uint32][]func(*protocol.Packet)),
 		recvs:   make(map[uint32]chan *protocol.Packet),
@@ -49,8 +70,8 @@ func New(opts ...ClientOption) *Client {
 	return c
 }
 
-// Client is an socket client
-type Client struct {
+// client is an socket client
+type client struct {
 	sync.RWMutex
 
 	Context context.Context
@@ -88,7 +109,7 @@ type Client struct {
 }
 
 // Dial using to dial with server
-func (c *Client) Dial(ctx context.Context, u string, handshake *protocol.Handshake, opts ...DialOption) error {
+func (c *client) Dial(ctx context.Context, u string, handshake *protocol.Handshake, opts ...DialOption) error {
 	c.handshake = handshake
 
 	uri, err := url.Parse(u)
@@ -123,19 +144,19 @@ func (c *Client) Dial(ctx context.Context, u string, handshake *protocol.Handsha
 	return c.auth()
 }
 
-func (c *Client) AuthInfo() *control.AuthResponse {
+func (c *client) AuthInfo() *control.AuthResponse {
 	return c.authInfo
 }
 
-func (c *Client) dial(ctx context.Context, dialer DialConnFunc) (err error) {
-	if c.conn, err = dialer(ctx, c, c.addr, c.handshake, c.dialOptions); err == nil {
+func (c *client) dial(ctx context.Context, dialer DialConnFunc) (err error) {
+	if c.conn, err = dialer(ctx, c.Logger, c.addr, c.handshake, c.dialOptions); err == nil {
 		c.conn.OnPacket(c.onPacket)
 	}
 
 	return
 }
 
-func (c *Client) auth() error {
+func (c *client) auth() error {
 	if c.dialOptions.AuthTokenGetter == nil {
 		return nil
 	}
@@ -163,7 +184,7 @@ func (c *Client) auth() error {
 	return nil
 }
 
-func (c *Client) reconnecting() {
+func (c *client) reconnecting() {
 	c.Lock()
 	if c.doReconnectting {
 		return
@@ -213,7 +234,7 @@ func (c *Client) reconnecting() {
 	c.Unlock()
 }
 
-func (c *Client) reconnect() error {
+func (c *client) reconnect() error {
 	if c.dialOptions.MaxReconnect > 0 {
 		if c.reconnectCount >= c.dialOptions.MaxReconnect {
 			return ErrHitMaxReconnect
@@ -252,7 +273,7 @@ func (c *Client) reconnect() error {
 	return c.reconnectDial()
 }
 
-func (c *Client) reconnectDial() error {
+func (c *client) reconnectDial() error {
 	res, err := c.Do(c.Context, &Request{Cmd: uint32(control.Command_CMD_RECONNECT), Body: &control.ReconnectRequest{
 		SessionId: c.authInfo.SessionId,
 	}}, RequestTimeout(c.dialOptions.AuthTimeout))
@@ -275,7 +296,7 @@ func (c *Client) reconnectDial() error {
 	return nil
 }
 
-func (c *Client) isAuthExpired() bool {
+func (c *client) isAuthExpired() bool {
 	if c.authInfo == nil {
 		return true
 	}
@@ -286,7 +307,7 @@ func (c *Client) isAuthExpired() bool {
 }
 
 // Do will do request to server
-func (c *Client) Do(ctx context.Context, req *Request, opts ...RequestOption) (res *protocol.Packet, err error) {
+func (c *client) Do(ctx context.Context, req *Request, opts ...RequestOption) (res *protocol.Packet, err error) {
 	rp, e := protocol.NewRequest(c.conn.Context(), req.Cmd, req.Body)
 
 	if e != nil {
@@ -317,7 +338,7 @@ func (c *Client) Do(ctx context.Context, req *Request, opts ...RequestOption) (r
 
 // Subscribe using to register handle of push data
 // concurrency unsafe, please sub at first time
-func (c *Client) Subscribe(cmd uint32, sub func(*protocol.Packet)) {
+func (c *client) Subscribe(cmd uint32, sub func(*protocol.Packet)) {
 	var (
 		subs []func(*protocol.Packet)
 		ok   bool
@@ -333,27 +354,27 @@ func (c *Client) Subscribe(cmd uint32, sub func(*protocol.Packet)) {
 }
 
 // OnPing using to custom handle ping packet
-func (c *Client) OnPing(fn func(*protocol.Packet)) {
+func (c *client) OnPing(fn func(*protocol.Packet)) {
 	c.onPing = fn
 }
 
 // OnPong using to custom handle pong packet
-func (c *Client) OnPong(fn func(*protocol.Packet)) {
+func (c *client) OnPong(fn func(*protocol.Packet)) {
 	c.onPong = fn
 }
 
 // OnClose using to handle client close
-func (c *Client) OnClose(fn func(err error)) {
+func (c *client) OnClose(fn func(err error)) {
 	c.onClose = fn
 }
 
 // AfterReconnected using to handle client after reconnected
-func (c *Client) AfterReconnected(fn func()) {
+func (c *client) AfterReconnected(fn func()) {
 	c.afterReconnected = fn
 }
 
 // Close used to close conn between server
-func (c *Client) Close(err error) error {
+func (c *client) Close(err error) error {
 	c.Logger.Info("close client")
 
 	c.conn.Close(errors.New("close by client"))
@@ -367,7 +388,7 @@ func (c *Client) Close(err error) error {
 	return nil
 }
 
-func (c *Client) closeByServer(packet *protocol.Packet) {
+func (c *client) closeByServer(packet *protocol.Packet) {
 	var reason control.Close
 
 	if err := packet.Unmarshal(&reason); err != nil {
@@ -381,7 +402,7 @@ func (c *Client) closeByServer(packet *protocol.Packet) {
 	c.reconnecting()
 }
 
-func (c *Client) keepalive() {
+func (c *client) keepalive() {
 	t := time.NewTicker(c.dialOptions.Keepalive)
 
 	now := time.Now()
@@ -439,7 +460,7 @@ func (c *Client) keepalive() {
 	}
 }
 
-func (c *Client) onPacket(packet *protocol.Packet, err error) {
+func (c *client) onPacket(packet *protocol.Packet, err error) {
 	if err != nil {
 		c.Logger.Errorf("conn receive packet error: %v", err)
 		c.reconnecting()
@@ -466,7 +487,7 @@ func (c *Client) onPacket(packet *protocol.Packet, err error) {
 	c.Logger.Warnf("client did't support request now, cmd: %d", packet.Metadata.CmdCode)
 }
 
-func (c *Client) handlePush(packet *protocol.Packet) {
+func (c *client) handlePush(packet *protocol.Packet) {
 	subs, ok := c.subs[packet.CMD()]
 
 	if !ok || len(subs) == 0 {
@@ -478,7 +499,7 @@ func (c *Client) handlePush(packet *protocol.Packet) {
 	}
 }
 
-func (c *Client) handleControl(packet *protocol.Packet) {
+func (c *client) handleControl(packet *protocol.Packet) {
 	if packet.IsPing() {
 		c.handlePing(packet)
 		return
@@ -499,7 +520,7 @@ func (c *Client) handleControl(packet *protocol.Packet) {
 	}
 }
 
-func (c *Client) handleResponse(packet *protocol.Packet) {
+func (c *client) handleResponse(packet *protocol.Packet) {
 	c.recvsMu.RLock()
 	defer c.recvsMu.RUnlock()
 
@@ -514,7 +535,7 @@ func (c *Client) handleResponse(packet *protocol.Packet) {
 	c.Logger.Warnf("no receiver for req %d", packet.Metadata.RequestId)
 }
 
-func (c *Client) handlePing(packet *protocol.Packet) {
+func (c *client) handlePing(packet *protocol.Packet) {
 	if c.onPing != nil {
 		c.onPing(packet)
 	}
@@ -530,7 +551,7 @@ func (c *Client) handlePing(packet *protocol.Packet) {
 	}
 }
 
-func (c *Client) handlePong(packet *protocol.Packet) {
+func (c *client) handlePong(packet *protocol.Packet) {
 	if c.onPong != nil {
 		c.onPong(packet)
 	}
@@ -540,7 +561,7 @@ func (c *Client) handlePong(packet *protocol.Packet) {
 	}
 }
 
-func (c *Client) recv(ctx context.Context, rid uint32) (res *protocol.Packet, err error) {
+func (c *client) recv(ctx context.Context, rid uint32) (res *protocol.Packet, err error) {
 	ch := make(chan *protocol.Packet, 1)
 
 	defer func() {
@@ -564,6 +585,6 @@ func (c *Client) recv(ctx context.Context, rid uint32) (res *protocol.Packet, er
 	return
 }
 
-func (c *Client) write(p *protocol.Packet) error {
+func (c *client) write(p *protocol.Packet) error {
 	return c.conn.Write(p, protocol.GzipSize(c.dialOptions.MinGzipSize))
 }
