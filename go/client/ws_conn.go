@@ -24,7 +24,7 @@ func init() {
 
 var ErrInvalidMessage = errors.New("invlaid websocket message")
 
-func dialWSConn(ctx context.Context, cli *Client, uri *url.URL, handshake *protocol.Handshake, o *DialOptions) (ClientConn, error) {
+func dialWSConn(ctx context.Context, logger protocol.Logger, uri *url.URL, handshake *protocol.Handshake, o *DialOptions) (ClientConn, error) {
 	ver := handshake.Version
 	p, err := protocol.GetProtocol(ver)
 
@@ -51,7 +51,7 @@ func dialWSConn(ctx context.Context, cli *Client, uri *url.URL, handshake *proto
 	qctx.Version = handshake.Version
 
 	c := &wsConn{
-		logger:  cli.Logger,
+		logger:  logger,
 		qctx:    qctx,
 		p:       p,
 		conn:    conn,

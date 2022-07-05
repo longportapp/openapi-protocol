@@ -176,18 +176,18 @@ func RequestTimeout(d time.Duration) RequestOption {
 }
 
 // ClientOption is func to set Client Context and Logger
-type ClientOption func(*Client)
+type ClientOption func(*client)
 
 // WithContext set context of client
 func WithContext(ctx context.Context) ClientOption {
-	return func(c *Client) {
+	return func(c *client) {
 		c.Context = ctx
 	}
 }
 
 // WithLogger set Logger of client
 func WithLogger(l protocol.Logger) ClientOption {
-	return func(c *Client) {
+	return func(c *client) {
 		c.Logger = l
 	}
 }

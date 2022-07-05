@@ -17,7 +17,7 @@ func init() {
 	RegisterDialer("mock", DialConnFunc(mockDialer))
 }
 
-func mockDialer(ctx context.Context, _ *Client, uri *url.URL, handshake *protocol.Handshake, opts *DialOptions) (ClientConn, error) {
+func mockDialer(ctx context.Context, _ protocol.Logger, uri *url.URL, handshake *protocol.Handshake, opts *DialOptions) (ClientConn, error) {
 	qctx := protocol.NewContext(ctx, protocol.ClientSide)
 
 	qctx.Platform = handshake.Platform
@@ -163,10 +163,12 @@ func (c *mockConn) Write(p *protocol.Packet, opts ...protocol.PackOption) error 
 
 	return nil
 }
+
 func (c *mockConn) Context() *protocol.Context {
 	return c.ctx
 }
-func newClientAndDial(opts ...DialOption) (*Client, error) {
+
+func newClientAndDial(opts ...DialOption) (Client, error) {
 	c := New()
 
 	err := c.Dial(context.Background(), "mock://127.0.0.1", &protocol.Handshake{
@@ -184,11 +186,13 @@ func TestClientDialer(t *testing.T) {
 }
 
 func TestClientAuth(t *testing.T) {
-	cli, _ := newClientAndDial()
+	c, _ := newClientAndDial()
+	cli := c.(*client)
 	mc := cli.conn.(*mockConn)
 
-	cli.dialOptions.AuthToken = "test auth"
-
+	cli.dialOptions.AuthTokenGetter = func() (string, error) {
+		return "test auth", nil
+	}
 	info := &control.AuthResponse{
 		SessionId: "session",
 		Expires:   time.Now().Add(time.Minute*2).UnixNano() / int64(time.Millisecond),
@@ -204,7 +208,8 @@ func TestClientAuth(t *testing.T) {
 }
 
 func TestClientReconnect(t *testing.T) {
-	cli, _ := newClientAndDial()
+	c, _ := newClientAndDial()
+	cli := c.(*client)
 
 	cli.dialOptions.MaxReconnect = 1
 
@@ -224,7 +229,8 @@ func TestClientReconnect(t *testing.T) {
 }
 
 func TestClientSubscribe(t *testing.T) {
-	cli, _ := newClientAndDial()
+	c, _ := newClientAndDial()
+	cli := c.(*client)
 	mc := cli.conn.(*mockConn)
 
 	testCmd := uint32(111)
@@ -249,7 +255,8 @@ func TestClientSubscribe(t *testing.T) {
 }
 
 func TestClientOnPingPong(t *testing.T) {
-	cli, _ := newClientAndDial(Keepalive(time.Second * 3))
+	c, _ := newClientAndDial(Keepalive(time.Second * 3))
+	cli := c.(*client)
 	mc := cli.conn.(*mockConn)
 
 	waitCh := make(chan struct{}, 1)
