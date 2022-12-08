@@ -449,13 +449,13 @@ func (c *client) keepalive() {
 			if err := check(); err != nil {
 				c.Logger.Errorf("keepalive error: %v", err)
 				c.reconnecting()
-				return
+				continue
 			}
 
 			if err := ping(); err != nil {
 				c.Logger.Errorf("keepalive failed to ping, err: %v", err)
 				c.reconnecting()
-				return
+				continue
 			}
 		}
 	}
