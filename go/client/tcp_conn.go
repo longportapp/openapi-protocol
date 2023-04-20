@@ -10,6 +10,7 @@ import (
 
 	protocol "github.com/longbridgeapp/openapi-protocol/go"
 	_ "github.com/longbridgeapp/openapi-protocol/go/v1"
+	_ "github.com/longbridgeapp/openapi-protocol/go/v2"
 
 	"github.com/Allenxuxu/ringbuffer"
 	"github.com/pkg/errors"
