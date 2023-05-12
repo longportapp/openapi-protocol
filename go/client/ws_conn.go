@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"io"
+	"net/http"
 	"net/url"
 	"strconv"
 	"sync"
@@ -39,7 +40,12 @@ func dialWSConn(ctx context.Context, logger protocol.Logger, uri *url.URL, hands
 
 	uri.RawQuery = query.Encode()
 
-	conn, _, err := websocket.DefaultDialer.DialContext(ctx, uri.String(), nil)
+	dialer := websocket.Dialer{
+		Proxy:            http.ProxyFromEnvironment,
+		HandshakeTimeout: o.Timeout,
+	}
+
+	conn, _, err := dialer.DialContext(ctx, uri.String(), nil)
 
 	if err != nil {
 		return nil, err
