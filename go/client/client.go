@@ -74,7 +74,7 @@ func New(opts ...ClientOption) Client {
 
 // client is an socket client
 type client struct {
-	sync.RWMutex
+	sync.Mutex
 
 	Context context.Context
 	Logger  protocol.Logger
@@ -153,9 +153,8 @@ func (c *client) AuthInfo() *control.AuthResponse {
 func (c *client) dial(ctx context.Context, dialer DialConnFunc) (err error) {
 	if c.conn, err = dialer(ctx, c.Logger, c.addr, c.handshake, c.dialOptions); err == nil {
 		c.conn.OnPacket(c.onPacket)
+		c.conn.OnClose(c.onConnClose)
 	}
-
-	c.conn.OnClose(c.onConnClose)
 
 	return
 }
@@ -217,7 +216,6 @@ func (c *client) reconnecting() {
 		}()
 
 		for {
-
 			c.Logger.Info("start reconnecting.")
 
 			err := c.reconnect()
@@ -272,7 +270,10 @@ func (c *client) reconnect() error {
 
 	dialer, _ := GetDialer(c.addr.Scheme)
 
-	if err := c.dial(c.Context, dialer); err != nil {
+	ctx, cancel := context.WithTimeout(c.Context, c.dialOptions.Timeout)
+	defer cancel()
+
+	if err := c.dial(ctx, dialer); err != nil {
 		return err
 	}
 
