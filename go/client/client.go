@@ -202,6 +202,7 @@ func (c *client) auth() error {
 func (c *client) reconnecting() {
 	c.Lock()
 	if c.doReconnectting {
+		c.Unlock()
 		return
 	}
 
