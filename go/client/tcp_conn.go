@@ -50,13 +50,14 @@ func dialTCPConn(ctx context.Context, logger protocol.Logger, uri *url.URL, hand
 	qctx.Version = handshake.Version
 
 	c := &tcpConn{
-		logger:  logger,
-		qctx:    qctx,
-		p:       p,
-		conn:    conn,
-		readBuf: ringbuffer.New(o.ReadBufferSize),
-		writeCh: make(chan []byte, o.WriteQueueSize),
-		buf:     make([]byte, 0xfffff), // alloc 1m length for reading
+		logger:        logger,
+		qctx:          qctx,
+		p:             p,
+		conn:          conn,
+		readBuf:       ringbuffer.New(o.ReadBufferSize),
+		writeCh:       make(chan []byte, o.WriteQueueSize),
+		buf:           make([]byte, 0xfffff), // alloc 1m length for reading
+		closeCallback: newCloseCallback(),
 	}
 
 	c.dopts = *o
@@ -76,6 +77,7 @@ func dialTCPConn(ctx context.Context, logger protocol.Logger, uri *url.URL, hand
 
 // tcp conn
 type tcpConn struct {
+	*closeCallback
 	sync.Once
 	conn net.Conn
 
@@ -176,6 +178,8 @@ func (conn *tcpConn) Close(err error) {
 	close(conn.writeCh)
 
 	conn.conn.Close()
+
+	conn.DispatchClose(err)
 }
 
 func (conn *tcpConn) communicating() {

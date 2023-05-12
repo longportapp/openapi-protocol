@@ -155,7 +155,21 @@ func (c *client) dial(ctx context.Context, dialer DialConnFunc) (err error) {
 		c.conn.OnPacket(c.onPacket)
 	}
 
+	c.conn.OnClose(c.onConnClose)
+
 	return
+}
+
+func (c *client) onConnClose(err error) {
+	select {
+	case <-c.closeCh:
+		return
+	default:
+	}
+
+	c.Logger.Debugf("reconnect for conn closed: %v", err)
+
+	c.reconnecting()
 }
 
 func (c *client) auth() error {
@@ -295,6 +309,8 @@ func (c *client) reconnectDial() error {
 	}
 
 	c.authInfo = &info
+	c.reconnectCount = 0
+	c.lastKeepaliveId = 0
 	return nil
 }
 
@@ -382,15 +398,11 @@ func (c *client) AfterReconnected(fn func()) {
 // Close used to close conn between server
 func (c *client) Close(err error) error {
 	c.Logger.Info("close client")
-
-	c.conn.Close(errors.New("close by client"))
-
 	close(c.closeCh)
-
+	c.conn.Close(errors.New("close by client"))
 	if c.onClose != nil {
 		c.onClose(err)
 	}
-
 	return nil
 }
 
@@ -562,9 +574,7 @@ func (c *client) handlePong(packet *protocol.Packet) {
 		c.onPong(packet)
 	}
 
-	if packet.Metadata.RequestId == c.lastKeepaliveId {
-		c.lastPongAt = time.Now()
-	}
+	c.lastPongAt = time.Now()
 }
 
 func (c *client) recv(ctx context.Context, rid uint32) (res *protocol.Packet, err error) {

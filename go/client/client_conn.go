@@ -34,4 +34,25 @@ type ClientConn interface {
 	Write(*protocol.Packet, ...protocol.PackOption) error
 	Context() *protocol.Context
 	NeedHandleControl() bool
+	OnClose(cb func(error))
+}
+
+type closeCallback struct {
+	callbacks []func(error)
+}
+
+func (c *closeCallback) OnClose(cb func(error)) {
+	c.callbacks = append(c.callbacks, cb)
+}
+
+func (c *closeCallback) DispatchClose(err error) {
+	for _, cb := range c.callbacks {
+		cb(err)
+	}
+}
+
+func newCloseCallback() *closeCallback {
+	return &closeCallback{
+		callbacks: make([]func(error), 0, 8),
+	}
 }

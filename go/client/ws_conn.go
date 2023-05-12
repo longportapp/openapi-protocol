@@ -51,13 +51,14 @@ func dialWSConn(ctx context.Context, logger protocol.Logger, uri *url.URL, hands
 	qctx.Version = handshake.Version
 
 	c := &wsConn{
-		logger:  logger,
-		qctx:    qctx,
-		p:       p,
-		conn:    conn,
-		writeCh: make(chan []byte, o.WriteQueueSize),
-		dopts:   *o,
-		closeCh: make(chan struct{}),
+		logger:        logger,
+		qctx:          qctx,
+		p:             p,
+		conn:          conn,
+		writeCh:       make(chan []byte, o.WriteQueueSize),
+		dopts:         *o,
+		closeCh:       make(chan struct{}),
+		closeCallback: newCloseCallback(),
 	}
 
 	c.conn.SetCloseHandler(c.onClose)
@@ -76,6 +77,7 @@ var _ ClientConn = &wsConn{}
 // tcp conn
 type wsConn struct {
 	sync.Once
+	*closeCallback
 	conn   *websocket.Conn
 	logger protocol.Logger
 	qctx   *protocol.Context
@@ -184,11 +186,13 @@ func (conn *wsConn) Close(err error) {
 		return
 	}
 
-	conn.logger.Infof("close conn, err: %v", err)
+	conn.logger.Errorf("close conn, err: %v", err)
 	close(conn.closeCh)
 	close(conn.writeCh)
 
 	conn.conn.Close()
+
+	conn.DispatchClose(err)
 }
 
 func (conn *wsConn) communicating() {
