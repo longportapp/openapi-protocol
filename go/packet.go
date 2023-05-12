@@ -37,6 +37,10 @@ func (p Packet) MarshalMetadata(max int) []byte {
 }
 
 func (p Packet) SetMetadata(k, v string) {
+	if p.Metadata == nil {
+		return
+	}
+
 	p.Metadata.Set(k, v)
 }
 
@@ -194,6 +198,7 @@ func NewPacket(ctx *Context, t PacketType, cmd uint32, body interface{}, opts ..
 		Type:    t,
 		Codec:   ctx.Codec,
 		CmdCode: cmd,
+		Values:  make(map[string]string, 0),
 	}
 
 	for _, opt := range opts {

@@ -25,7 +25,7 @@ code structure:
 - go - protocol definations
 - go/client - client sample code
 - go/v1 - protocol version 1 implement
-- go/v2 - protocol version 2 implement, not support yet
+- go/v2 - protocol version 2 implement
 
 Example is [here](https://github.com/longbridgeapp/openapi-protocol/tree/main/examples/go)
 

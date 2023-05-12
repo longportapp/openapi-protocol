@@ -45,8 +45,9 @@ type Client interface {
 
 // Request represents an socket request to server
 type Request struct {
-	Cmd  uint32
-	Body proto.Message
+	Cmd      uint32
+	Body     proto.Message
+	Metadata map[string]string
 }
 
 // New returns a new client instance
@@ -314,6 +315,10 @@ func (c *client) Do(ctx context.Context, req *Request, opts ...RequestOption) (r
 	if e != nil {
 		err = e
 		return
+	}
+
+	for k, v := range req.Metadata {
+		rp.SetMetadata(k, v)
 	}
 
 	ropts := newRequestOptions(opts...)
