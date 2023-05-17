@@ -74,7 +74,7 @@ func New(opts ...ClientOption) Client {
 
 // client is an socket client
 type client struct {
-	sync.Mutex
+	sync.RWMutex
 
 	Context context.Context
 	Logger  protocol.Logger
@@ -151,6 +151,8 @@ func (c *client) AuthInfo() *control.AuthResponse {
 }
 
 func (c *client) dial(ctx context.Context, dialer DialConnFunc) (err error) {
+	c.Lock()
+	defer c.Unlock()
 	if c.conn, err = dialer(ctx, c.Logger, c.addr, c.handshake, c.dialOptions); err == nil {
 		c.conn.OnPacket(c.onPacket)
 		c.conn.OnClose(c.onConnClose)
@@ -328,6 +330,8 @@ func (c *client) isAuthExpired() bool {
 
 // Do will do request to server
 func (c *client) Do(ctx context.Context, req *Request, opts ...RequestOption) (res *protocol.Packet, err error) {
+	c.RLock()
+	defer c.RUnlock()
 	rp, e := protocol.NewRequest(c.conn.Context(), req.Cmd, req.Body)
 
 	if e != nil {
@@ -401,7 +405,9 @@ func (c *client) AfterReconnected(fn func()) {
 func (c *client) Close(err error) error {
 	c.Logger.Info("close client")
 	close(c.closeCh)
+	c.RLock()
 	c.conn.Close(errors.New("close by client"))
+	c.RUnlock()
 	if c.onClose != nil {
 		c.onClose(err)
 	}
@@ -417,7 +423,9 @@ func (c *client) closeByServer(packet *protocol.Packet) {
 		c.Logger.Errorf("close by server, code: %v, reason: %s", reason.Code, reason.Reason)
 	}
 
+	c.RLock()
 	c.conn.Close(errors.New("close by server"))
+	c.RUnlock()
 
 	c.reconnecting()
 }
@@ -442,18 +450,18 @@ func (c *client) keepalive() {
 
 	ping := func() error {
 		// skip ping op when do reconnecting
-		c.Lock()
+		c.RLock()
+		defer c.RUnlock()
 		if c.doReconnectting {
-			c.Unlock()
 			return nil
 		}
-		c.Unlock()
 
 		if c.conn == nil || c.conn.Context() == nil {
 			return nil
 		}
 
 		id := c.conn.Context().NextReqId()
+
 		hid := new(int32)
 		*hid = int32(id)
 
