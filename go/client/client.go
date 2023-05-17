@@ -441,6 +441,18 @@ func (c *client) keepalive() {
 	}
 
 	ping := func() error {
+		// skip ping op when do reconnecting
+		c.Lock()
+		if c.doReconnectting {
+			c.Unlock()
+			return nil
+		}
+		c.Unlock()
+
+		if c.conn == nil || c.conn.Context() == nil {
+			return nil
+		}
+
 		id := c.conn.Context().NextReqId()
 		hid := new(int32)
 		*hid = int32(id)
