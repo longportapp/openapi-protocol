@@ -45,7 +45,7 @@ func (p *protocolV2) UnpackBytes(ctx *protocol.Context, bs []byte) (packet *prot
 
 	packet = &protocol.Packet{
 		Metadata: header.Metadata(ctx),
-		Body:     data[header.MetadataLength:header.BodyLength],
+		Body:     data[header.MetadataLength : header.BodyLength+uint32(header.MetadataLength)],
 	}
 
 	if err = packet.UnmarshalMetadata(md); err != nil {
@@ -53,7 +53,7 @@ func (p *protocolV2) UnpackBytes(ctx *protocol.Context, bs []byte) (packet *prot
 	}
 
 	if header.Verify == 1 {
-		idx := int(header.BodyLength)
+		idx := int(header.BodyLength) + int(header.MetadataLength)
 
 		if len(data) < idx+v1.NonceLength+v1.SignatureLength {
 			err = v1.ErrInvalidFrame
