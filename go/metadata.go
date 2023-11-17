@@ -1,6 +1,10 @@
 package protocol
 
-import "github.com/pkg/errors"
+import (
+	"strings"
+
+	"github.com/pkg/errors"
+)
 
 var (
 	ErrKeyLengthTooLong    = errors.New("key length should not greate 2^14 - 1")
@@ -38,15 +42,16 @@ type Metadata struct {
 }
 
 func (md *Metadata) UnmarshalValues(data []byte) error {
+	values := make(map[string]string)
+
 	if len(data) == 0 {
+		md.Values = values
 		return nil
 	}
 
 	if len(data) < 2 {
 		return ErrInvalidMetadataData
 	}
-
-	values := make(map[string]string)
 
 	getString := func() (string, error) {
 		l := len(data)
@@ -93,7 +98,7 @@ func (md *Metadata) UnmarshalValues(data []byte) error {
 		if err != nil {
 			return err
 		}
-		values[key] = val
+		values[strings.ToLower(key)] = val
 	}
 
 	md.Values = values
@@ -203,12 +208,12 @@ func (md *Metadata) Set(k, v string) error {
 	if len(v) > maxStringLength {
 		return ErrValueLengthTooLong
 	}
-	md.Values[k] = v
+	md.Values[strings.ToLower(k)] = v
 
 	return nil
 }
 
 // Get metadata value
 func (md *Metadata) Get(k string) string {
-	return md.Values[k]
+	return md.Values[strings.ToLower(k)]
 }
