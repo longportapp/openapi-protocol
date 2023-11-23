@@ -5,9 +5,10 @@ import (
 	"testing"
 
 	"github.com/Allenxuxu/ringbuffer"
-	protocol "github.com/longportapp/openapi-procotol/go"
-	v1 "github.com/longportapp/openapi-procotol/go/v1"
 	"github.com/stretchr/testify/assert"
+
+	protocol "github.com/longportapp/openapi-protocol/go"
+	v1 "github.com/longportapp/openapi-protocol/go/v1"
 )
 
 func TestHeader_Pack(t *testing.T) {

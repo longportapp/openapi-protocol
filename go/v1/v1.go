@@ -3,10 +3,10 @@ package v1
 import (
 	"encoding/binary"
 
-	protocol "github.com/longbridgeapp/openapi-protocol/go"
-	"github.com/longbridgeapp/openapi-protocol/go/gzip"
-
 	"github.com/Allenxuxu/ringbuffer"
+
+	protocol "github.com/longportapp/openapi-protocol/go"
+	"github.com/longportapp/openapi-protocol/go/gzip"
 )
 
 func init() {

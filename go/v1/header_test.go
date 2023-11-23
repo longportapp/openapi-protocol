@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	protocol "github.com/longbridgeapp/openapi-protocol/go"
-
 	"github.com/Allenxuxu/ringbuffer"
 	"github.com/stretchr/testify/assert"
+
+	protocol "github.com/longportapp/openapi-protocol/go"
 )
 
 func TestHeader_Pack(t *testing.T) {
