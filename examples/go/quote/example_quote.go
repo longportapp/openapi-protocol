@@ -5,10 +5,10 @@ import (
 	"flag"
 	"log"
 
-	quote "github.com/longbridgeapp/openapi-protobufs/gen/go/quote"
-	protocol "github.com/longbridgeapp/openapi-protocol/go"
-	"github.com/longbridgeapp/openapi-protocol/go/client"
-	_ "github.com/longbridgeapp/openapi-protocol/go/v1"
+	quote "github.com/longportapp/openapi-protobufs/gen/go/quote"
+	protocol "github.com/longportapp/openapi-protocol/go"
+	"github.com/longportapp/openapi-protocol/go/client"
+	_ "github.com/longportapp/openapi-protocol/go/v1"
 )
 
 func main() {
