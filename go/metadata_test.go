@@ -99,11 +99,10 @@ func TestUnmarshalStringLength(t *testing.T) {
 			length:  1000,
 			bitSize: length15Bit,
 		}, {
-			label:   "zero length should raise error",
+			label:   "zero length should not raise error",
 			data:    []byte{0, 0},
 			length:  0,
 			bitSize: length7Bit,
-			err:     true,
 		}, {
 			label:   "two bytes length can't less than 128",
 			data:    []byte{128, 6},
@@ -149,17 +148,19 @@ func TestMarshalValues(t *testing.T) {
 			label: "marshal and unmarshal should ok",
 			md: &Metadata{
 				Values: map[string]string{
-					"key1": r1,
-					"key2": r2,
-					"key3": r3,
-					"key4": r4,
+					"key1":      r1,
+					"key2":      r2,
+					"KEY3":      r3,
+					"key4":      r4,
+					"empty_key": "",
 				},
 			},
 			values: map[string]string{
-				"key1": r1,
-				"key2": r2,
-				"key3": r3,
-				"key4": r4,
+				"key1":      r1,
+				"key2":      r2,
+				"key3":      r3,
+				"key4":      r4,
+				"empty_key": "",
 			},
 			maxLength: 1<<16 - 1,
 		}, {
