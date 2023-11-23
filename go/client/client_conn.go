@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/url"
 
-	protocol "github.com/longbridgeapp/openapi-protocol/go"
+	protocol "github.com/longportapp/openapi-protocol/go"
 )
 
 var connDialers = make(map[string]DialConnFunc)

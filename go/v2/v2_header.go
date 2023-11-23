@@ -4,10 +4,10 @@ import (
 	"encoding/binary"
 	"sync"
 
-	protocol "github.com/longbridgeapp/openapi-protocol/go"
-	v1 "github.com/longbridgeapp/openapi-protocol/go/v1"
-
 	"github.com/Allenxuxu/ringbuffer"
+
+	protocol "github.com/longportapp/openapi-protocol/go"
+	v1 "github.com/longportapp/openapi-protocol/go/v1"
 )
 
 const MaxMetadataLength = 1<<16 - 1

@@ -4,10 +4,10 @@ import (
 	"encoding/binary"
 	"sync"
 
-	protocol "github.com/longbridgeapp/openapi-protocol/go"
-
 	"github.com/Allenxuxu/ringbuffer"
 	"github.com/pkg/errors"
+
+	protocol "github.com/longportapp/openapi-protocol/go"
 )
 
 var ErrUnknowPacket = errors.New("invalid packet type")

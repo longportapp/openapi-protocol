@@ -108,7 +108,7 @@ func (md *Metadata) UnmarshalValues(data []byte) error {
 
 func unmarshalStringLength(data []byte) (l int, bitSize uint8, err error) {
 	if len(data) == 0 {
-		err = ErrInvalidMetadataData
+		bitSize = length7Bit
 		return
 	}
 
@@ -129,10 +129,6 @@ func unmarshalStringLength(data []byte) (l int, bitSize uint8, err error) {
 		if l <= max7BitLength {
 			err = ErrInvalidMetadataData
 		}
-	}
-
-	if l == 0 {
-		err = ErrInvalidMetadataData
 	}
 
 	return
@@ -168,7 +164,7 @@ func (md *Metadata) MarshalValues(max int) []byte {
 	var data []byte
 
 	for key, val := range md.Values {
-		if key == "" || val == "" {
+		if key == "" {
 			continue
 		}
 

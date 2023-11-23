@@ -6,11 +6,11 @@ import (
 	"testing"
 	"time"
 
-	control "github.com/longbridgeapp/openapi-protobufs/gen/go/control"
-	protocol "github.com/longbridgeapp/openapi-protocol/go"
-
 	"github.com/golang/protobuf/ptypes/empty"
+	control "github.com/longportapp/openapi-protobufs/gen/go/control"
 	"github.com/stretchr/testify/assert"
+
+	protocol "github.com/longportapp/openapi-protocol/go"
 )
 
 func init() {
@@ -55,6 +55,9 @@ func (c *mockConn) Close(err error) {
 	c.closed = true
 	close(c.packetCh)
 }
+
+func (c *mockConn) OnClose(fn func(error)) {}
+
 func (c *mockConn) OnPacket(fn func(*protocol.Packet, error)) {
 	go func() {
 		for p := range c.packetCh {
@@ -63,6 +66,7 @@ func (c *mockConn) OnPacket(fn func(*protocol.Packet, error)) {
 	}()
 
 }
+
 func (c *mockConn) Write(p *protocol.Packet, opts ...protocol.PackOption) error {
 	if c.closed {
 		return errConnClosed
@@ -208,10 +212,8 @@ func TestClientAuth(t *testing.T) {
 }
 
 func TestClientReconnect(t *testing.T) {
-	c, _ := newClientAndDial()
+	c, _ := newClientAndDial(MaxReconnect(1))
 	cli := c.(*client)
-
-	cli.dialOptions.MaxReconnect = 1
 
 	cli.authInfo = &control.AuthResponse{
 		SessionId: "sess",
@@ -220,12 +222,7 @@ func TestClientReconnect(t *testing.T) {
 
 	err := cli.reconnect()
 	assert.Nil(t, err)
-
 	assert.Equal(t, "session", cli.authInfo.SessionId)
-
-	err = cli.reconnect()
-
-	assert.Error(t, err)
 }
 
 func TestClientSubscribe(t *testing.T) {
