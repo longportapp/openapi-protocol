@@ -2,4 +2,4 @@
 
 ## Usage
 
-Show in [example/go](https://github.com/longbridgeapp/openapi-protocol/tree/main/examples/go)
+Show in [example/go](https://github.com/longportapp/openapi-protocol/tree/main/examples/go)

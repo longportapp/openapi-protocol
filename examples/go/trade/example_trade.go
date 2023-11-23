@@ -5,11 +5,11 @@ import (
 	"flag"
 	"log"
 
-	trade "github.com/longbridgeapp/openapi-protobufs/gen/go/trade"
+	trade "github.com/longportapp/openapi-protobufs/gen/go/trade"
 
-	protocol "github.com/longbridgeapp/openapi-protocol/go"
-	"github.com/longbridgeapp/openapi-protocol/go/client"
-	_ "github.com/longbridgeapp/openapi-protocol/go/v1"
+	protocol "github.com/longportapp/openapi-protocol/go"
+	"github.com/longportapp/openapi-protocol/go/client"
+	_ "github.com/longportapp/openapi-protocol/go/v1"
 )
 
 func main() {
