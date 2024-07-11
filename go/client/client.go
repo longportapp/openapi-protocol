@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	protocol "github.com/longportapp/openapi-protocol/go"
 	control "github.com/longportapp/openapi-protobufs/gen/go/control"
+	protocol "github.com/longportapp/openapi-protocol/go"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 )
@@ -104,8 +104,9 @@ type client struct {
 	reconnectCount  int
 	doReconnectting bool
 
-	addr        *url.URL
-	dialOptions *DialOptions
+	addr            *url.URL
+	dialOptions     *DialOptions
+	connectMetadata map[string]string
 }
 
 // Dial using to dial with server
@@ -181,7 +182,7 @@ func (c *client) auth() error {
 	}
 	res, err := c.Do(context.Background(), &Request{
 		Cmd:  uint32(control.Command_CMD_AUTH),
-		Body: &control.AuthRequest{Token: token},
+		Body: &control.AuthRequest{Token: token, Metadata: c.connectMetadata},
 	}, RequestTimeout(c.dialOptions.AuthTimeout))
 
 	if err != nil {
@@ -294,6 +295,7 @@ func (c *client) reconnect() error {
 func (c *client) reconnectDial() error {
 	res, err := c.Do(c.Context, &Request{Cmd: uint32(control.Command_CMD_RECONNECT), Body: &control.ReconnectRequest{
 		SessionId: c.authInfo.SessionId,
+		Metadata:  c.connectMetadata,
 	}}, RequestTimeout(c.dialOptions.AuthTimeout))
 
 	if err != nil {

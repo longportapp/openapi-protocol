@@ -191,3 +191,10 @@ func WithLogger(l protocol.Logger) ClientOption {
 		c.Logger = l
 	}
 }
+
+// WithConnectMetadata set connect metadata
+func WithConnectMetadata(m map[string]string) ClientOption {
+	return func(c *client) {
+		c.connectMetadata = m
+	}
+}
