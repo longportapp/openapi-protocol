@@ -77,8 +77,9 @@ func dialTCPConn(ctx context.Context, logger protocol.Logger, uri *url.URL, hand
 // tcp conn
 type tcpConn struct {
 	*closeCallback
-	sync.Once
-	conn net.Conn
+	closeOnce    sync.Once
+	onPacketOnce sync.Once
+	conn         net.Conn
 
 	logger protocol.Logger
 	qctx   *protocol.Context
@@ -138,7 +139,7 @@ func (conn *tcpConn) write(data []byte) error {
 
 func (conn *tcpConn) OnPacket(fn func(*protocol.Packet, error)) {
 	// OnPacket can only invoke once
-	conn.Do(func() {
+	conn.onPacketOnce.Do(func() {
 		conn.packetCh = make(chan *protocol.Packet, conn.dopts.ReadQueueSize)
 
 		go func() {
@@ -168,17 +169,20 @@ func (conn *tcpConn) OnPacket(fn func(*protocol.Packet, error)) {
 }
 
 func (conn *tcpConn) Close(err error) {
-	if conn.closed() {
-		return
-	}
+	// Close can only invoke once
+	conn.closeOnce.Do(func() {
+		if conn.closed() {
+			return
+		}
 
-	conn.logger.Errorf("close conn, err: %v", err)
-	close(conn.closeCh)
-	close(conn.writeCh)
+		conn.logger.Errorf("close conn, err: %v", err)
+		close(conn.closeCh)
+		close(conn.writeCh)
 
-	conn.conn.Close()
+		conn.conn.Close()
 
-	conn.DispatchClose(err)
+		conn.DispatchClose(err)
+	})
 }
 
 func (conn *tcpConn) communicating() {

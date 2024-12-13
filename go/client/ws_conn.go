@@ -82,7 +82,8 @@ var _ ClientConn = &wsConn{}
 
 // tcp conn
 type wsConn struct {
-	sync.Once
+	onPacketOnce sync.Once
+	closeOnce    sync.Once
 	*closeCallback
 	conn   *websocket.Conn
 	logger protocol.Logger
@@ -158,7 +159,7 @@ func (conn *wsConn) write(data []byte) error {
 
 func (conn *wsConn) OnPacket(fn func(*protocol.Packet, error)) {
 	// OnPacket can only invoke once
-	conn.Do(func() {
+	conn.onPacketOnce.Do(func() {
 		conn.packetCh = make(chan *protocol.Packet, conn.dopts.ReadQueueSize)
 
 		go func() {
@@ -188,17 +189,20 @@ func (conn *wsConn) OnPacket(fn func(*protocol.Packet, error)) {
 }
 
 func (conn *wsConn) Close(err error) {
-	if conn.closed() {
-		return
-	}
+	// Close can only invoke once
+	conn.closeOnce.Do(func() {
+		if conn.closed() {
+			return
+		}
 
-	conn.logger.Errorf("close conn, err: %v", err)
-	close(conn.closeCh)
-	close(conn.writeCh)
+		conn.logger.Errorf("close conn, err: %v", err)
+		close(conn.closeCh)
+		close(conn.writeCh)
 
-	conn.conn.Close()
+		conn.conn.Close()
 
-	conn.DispatchClose(err)
+		conn.DispatchClose(err)
+	})
 }
 
 func (conn *wsConn) communicating() {
