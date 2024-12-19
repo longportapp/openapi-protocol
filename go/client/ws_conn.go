@@ -189,17 +189,16 @@ func (conn *wsConn) OnPacket(fn func(*protocol.Packet, error)) {
 }
 
 func (conn *wsConn) Close(err error) {
+	if conn.closed() {
+		return
+	}
 	// Close can only invoke once
 	conn.closeOnce.Do(func() {
-		if conn.closed() {
-			return
-		}
-
 		conn.logger.Errorf("close conn, err: %v", err)
 		close(conn.closeCh)
 		close(conn.writeCh)
 
-		conn.conn.Close()
+		_ = conn.conn.Close()
 
 		conn.DispatchClose(err)
 	})
