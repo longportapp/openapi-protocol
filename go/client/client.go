@@ -428,7 +428,7 @@ func (c *client) closeByServer(packet *protocol.Packet) {
 
 	c.RLock()
 	if c.conn != nil {
-  	c.conn.Close(errors.New("close by server"))
+		c.conn.Close(errors.New("close by server"))
 	}
 	c.RUnlock()
 
