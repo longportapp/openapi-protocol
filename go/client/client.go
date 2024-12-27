@@ -408,7 +408,7 @@ func (c *client) Close(err error) error {
 	close(c.closeCh)
 	c.RLock()
 	if c.conn != nil {
-	  c.conn.Close(errors.New("close by client"))
+		c.conn.Close(errors.New("close by client"))
 	}
 	c.RUnlock()
 	if c.onClose != nil {
