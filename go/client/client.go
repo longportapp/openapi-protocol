@@ -407,7 +407,9 @@ func (c *client) Close(err error) error {
 	c.Logger.Info("close client")
 	close(c.closeCh)
 	c.RLock()
-	c.conn.Close(errors.New("close by client"))
+	if c.conn != nil {
+	  c.conn.Close(errors.New("close by client"))
+	}
 	c.RUnlock()
 	if c.onClose != nil {
 		c.onClose(err)
@@ -425,7 +427,9 @@ func (c *client) closeByServer(packet *protocol.Packet) {
 	}
 
 	c.RLock()
-	c.conn.Close(errors.New("close by server"))
+	if c.conn != nil {
+  	c.conn.Close(errors.New("close by server"))
+	}
 	c.RUnlock()
 
 	c.reconnecting()
